@@ -1,32 +1,71 @@
-# React + TypeScript + Vite
+# 🚀 TaskFlow - 스마트한 할 일 관리 파트너
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+**TaskFlow**는 직관적인 UI와 강력한 필터링 기능을 갖춘 모던 할 일 관리(Todo) 웹 애플리케이션입니다. 우선순위, 마감일, 커스텀 카테고리 설정을 통해 일정을 체계적으로 관리하고, 실시간 대시보드를 통해 업무 생산성을 극대화할 수 있습니다.
 
-Currently, two official plugins are available:
+---
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## ✨ 주요 기능
 
-## React Compiler
+### 1. 📊 실시간 대시보드 (통계)
+* **전체 완료율**: 전체 할 일 대비 완료된 할 일의 비율을 프로그레스 바로 시각화하여 제공합니다.
+* **진행 중인 할 일**: 아직 완료하지 않은 할 일의 개수를 실시간으로 표시합니다.
+* **중요 할 일**: 우선순위가 '높음'인 할 일 중 미완료된 항목의 개수를 보여줍니다.
+* **기한 초과**: 마감일이 지났으나 완료되지 않은 할 일의 개수를 경고와 함께 표시합니다.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+### 2. 📝 체계적인 할 일 관리
+* **상세 정보 입력**: 할 일 제목뿐만 아니라 상세 설명, 마감일(Due Date)을 지정할 수 있습니다.
+* **우선순위 설정**: 중요도에 따라 `낮음 🟢`, `중간 🟡`, `높음 🔴` 3단계로 구분하여 관리합니다.
+* **할 일 수정 및 삭제**: 등록된 할 일의 모든 정보를 모달 창을 통해 손쉽게 수정하거나 삭제할 수 있습니다.
 
-## Expanding the Oxlint configuration
+### 3. 🏷️ 커스텀 카테고리 관리
+* **기본 카테고리**: 업무, 개인, 쇼핑, 건강, 기타 등 자주 쓰이는 카테고리를 기본 제공합니다.
+* **커스텀 카테고리 추가**: 원하는 이름과 색상(블루, 그린, 옐로우, 레드 등)을 선택하여 자신만의 카테고리를 생성할 수 있습니다.
+* **유연한 삭제**: 커스텀 카테고리 삭제 시, 해당 카테고리에 속해 있던 할 일들은 자동으로 '기타' 카테고리로 안전하게 변경됩니다.
 
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
+### 4. 🔍 강력한 검색 및 필터링/정렬
+* **실시간 검색**: 제목 및 상세 설명에 포함된 키워드로 할 일을 즉시 검색합니다.
+* **다중 필터링**: 진행 상태(전체/진행중/완료), 우선순위(전체/높음/중간/낮음), 카테고리별로 필터를 조합하여 원하는 할 일만 모아볼 수 있습니다.
+* **정렬 기준**: 마감일 순, 우선순위 순, 생성일(최신) 순으로 정렬 방식을 자유롭게 변경할 수 있습니다.
 
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+### 5. 🌗 완벽한 다크모드 지원
+* **시스템 테마 감지**: 사용자의 OS 설정(라이트/다크 테마)을 자동으로 감지하여 초기 테마를 적용합니다.
+* **수동 토글**: 헤더 우측의 아이콘 버튼을 통해 언제든지 라이트/다크 모드를 전환할 수 있습니다.
+
+### 6. 💾 로컬 데이터 저장 및 초기화
+* **자동 저장**: 모든 할 일과 카테고리 데이터는 브라우저의 `localStorage`에 안전하게 저장되어 새로고침하거나 브라우저를 닫아도 유지됩니다.
+* **원클릭 초기화**: 헤더의 초기화 버튼(`RotateCcw`)을 통해 모든 데이터를 지우고 기본 샘플 데이터로 복원할 수 있습니다.
+
+---
+
+## 🛠️ 기술 스택
+
+* **Frontend**: React 19, TypeScript
+* **Build Tool**: Vite
+* **Styling**: Tailwind CSS v4
+* **Icons**: Lucide React
+
+---
+
+## ⚙️ 시작하기 (Local Development)
+
+### 1. 저장소 클론 및 의존성 설치
+```bash
+# 의존성 패키지 설치
+npm install
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+### 2. 개발 서버 실행
+```bash
+npm run dev
+```
+> 브라우저에서 `http://localhost:5173` (또는 터미널에 표시된 주소)로 접속합니다.
+
+### 3. 프로젝트 빌드
+```bash
+npm run build
+```
+
+### 4. 코드 린트 검사
+```bash
+npm run lint
+```
