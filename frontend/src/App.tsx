@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next';
 import {
   CheckCircle2,
   Circle,
@@ -19,7 +20,8 @@ import {
   ListTodo,
   X,
   Sparkles,
-  RotateCcw
+  RotateCcw,
+  Languages
 } from 'lucide-react'
 
 // Interfaces
@@ -43,19 +45,21 @@ interface Category {
   isDefault?: boolean;
 }
 
-const COLOR_OPTIONS = [
-  { name: '블루', color: 'bg-blue-50 dark:bg-blue-950/30', textColor: 'text-blue-600 dark:text-blue-400', borderColor: 'border-blue-200 dark:border-blue-900/50' },
-  { name: '그린', color: 'bg-emerald-50 dark:bg-emerald-950/30', textColor: 'text-emerald-600 dark:text-emerald-400', borderColor: 'border-emerald-200 dark:border-emerald-900/50' },
-  { name: '옐로우', color: 'bg-amber-50 dark:bg-amber-950/30', textColor: 'text-amber-600 dark:text-amber-400', borderColor: 'border-amber-200 dark:border-amber-900/50' },
-  { name: '레드', color: 'bg-rose-50 dark:bg-rose-950/30', textColor: 'text-rose-600 dark:text-rose-400', borderColor: 'border-rose-200 dark:border-rose-900/50' },
-  { name: '퍼플', color: 'bg-purple-50 dark:bg-purple-950/30', textColor: 'text-purple-600 dark:text-purple-400', borderColor: 'border-purple-200 dark:border-purple-900/50' },
-  { name: '인디고', color: 'bg-indigo-50 dark:bg-indigo-950/30', textColor: 'text-indigo-600 dark:text-indigo-400', borderColor: 'border-indigo-200 dark:border-indigo-900/50' },
-  { name: '핑크', color: 'bg-pink-50 dark:bg-pink-950/30', textColor: 'text-pink-600 dark:text-pink-400', borderColor: 'border-pink-200 dark:border-pink-900/50' },
-];
-
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001';
 
 function App() {
+  const { t, i18n } = useTranslation();
+
+  const COLOR_OPTIONS = [
+    { name: t('color_blue'), color: 'bg-blue-50 dark:bg-blue-950/30', textColor: 'text-blue-600 dark:text-blue-400', borderColor: 'border-blue-200 dark:border-blue-900/50' },
+    { name: t('color_green'), color: 'bg-emerald-50 dark:bg-emerald-950/30', textColor: 'text-emerald-600 dark:text-emerald-400', borderColor: 'border-emerald-200 dark:border-emerald-900/50' },
+    { name: t('color_yellow'), color: 'bg-amber-50 dark:bg-amber-950/30', textColor: 'text-amber-600 dark:text-amber-400', borderColor: 'border-amber-200 dark:border-amber-900/50' },
+    { name: t('color_red'), color: 'bg-rose-50 dark:bg-rose-950/30', textColor: 'text-rose-600 dark:text-rose-400', borderColor: 'border-rose-200 dark:border-rose-900/50' },
+    { name: t('color_purple'), color: 'bg-purple-50 dark:bg-purple-950/30', textColor: 'text-purple-600 dark:text-purple-400', borderColor: 'border-purple-200 dark:border-purple-900/50' },
+    { name: t('color_indigo'), color: 'bg-indigo-50 dark:bg-indigo-950/30', textColor: 'text-indigo-600 dark:text-indigo-400', borderColor: 'border-indigo-200 dark:border-indigo-900/50' },
+    { name: t('color_pink'), color: 'bg-pink-50 dark:bg-pink-950/30', textColor: 'text-pink-600 dark:text-pink-400', borderColor: 'border-pink-200 dark:border-pink-900/50' },
+  ];
+
   // --- States ---
   const [todos, setTodos] = useState<Todo[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -161,11 +165,11 @@ function App() {
         setNewDueDate('');
         setNewPriority('medium');
       } else {
-        alert('할 일을 추가하는 데 실패했습니다.');
+        alert(t('add_todo_failed_alert'));
       }
     } catch (err) {
       console.error(err);
-      alert('서버 통신 오류가 발생했습니다.');
+      alert(t('server_error_alert'));
     }
   };
 
@@ -187,11 +191,11 @@ function App() {
         const savedTodo = await res.json();
         setTodos(todos.map(todo => todo.id === id ? savedTodo : todo));
       } else {
-        alert('상태를 변경하는 데 실패했습니다.');
+        alert(t('toggle_todo_failed_alert'));
       }
     } catch (err) {
       console.error(err);
-      alert('서버 통신 오류가 발생했습니다.');
+      alert(t('server_error_alert'));
     }
   };
 
@@ -205,11 +209,11 @@ function App() {
       if (res.ok) {
         setTodos(todos.filter(todo => todo.id !== id));
       } else {
-        alert('할 일을 삭제하는 데 실패했습니다.');
+        alert(t('delete_todo_failed_alert'));
       }
     } catch (err) {
       console.error(err);
-      alert('서버 통신 오류가 발생했습니다.');
+      alert(t('server_error_alert'));
     }
   };
 
@@ -230,11 +234,11 @@ function App() {
         setTodos(todos.map(todo => todo.id === editingTodo.id ? savedTodo : todo));
         setEditingTodo(null);
       } else {
-        alert('할 일을 수정하는 데 실패했습니다.');
+        alert(t('update_todo_failed_alert'));
       }
     } catch (err) {
       console.error(err);
-      alert('서버 통신 오류가 발생했습니다.');
+      alert(t('server_error_alert'));
     }
   };
 
@@ -243,9 +247,8 @@ function App() {
     e.preventDefault();
     if (!newCategoryName.trim()) return;
 
-    // Check if category already exists
     if (categories.some(c => c.name === newCategoryName.trim())) {
-      alert('이미 존재하는 카테고리 이름입니다.');
+      alert(t('category_exists_alert'));
       return;
     }
 
@@ -271,11 +274,11 @@ function App() {
         setNewCategoryName('');
         setShowAddCategory(false);
       } else {
-        alert('카테고리를 추가하는 데 실패했습니다.');
+        alert(t('add_category_failed_alert'));
       }
     } catch (err) {
       console.error(err);
-      alert('서버 통신 오류가 발생했습니다.');
+      alert(t('server_error_alert'));
     }
   };
 
@@ -283,11 +286,11 @@ function App() {
   const handleDeleteCategory = async (id: string) => {
     const categoryToDelete = categories.find(c => c.id === id);
     if (categoryToDelete?.isDefault) {
-      alert('기본 카테고리는 삭제할 수 없습니다.');
+      alert(t('default_category_delete_alert'));
       return;
     }
 
-    if (confirm('이 카테고리를 삭제하시겠습니까? 해당 카테고리의 할 일은 "기타" 카테고리로 변경됩니다.')) {
+    if (confirm(t('delete_category_confirm'))) {
       try {
         const res = await fetch(`${API_BASE_URL}/api/categories/${id}`, {
           method: 'DELETE'
@@ -295,7 +298,6 @@ function App() {
 
         if (res.ok) {
           setCategories(categories.filter(c => c.id !== id));
-          // Update local state for todos that were in this category to 'other'
           setTodos(todos.map(todo => 
             todo.category === id ? { ...todo, category: 'other' } : todo
           ));
@@ -303,25 +305,24 @@ function App() {
             setFilterCategory('all');
           }
         } else {
-          alert('카테고리를 삭제하는 데 실패했습니다.');
+          alert(t('delete_category_failed_alert'));
         }
       } catch (err) {
         console.error(err);
-        alert('서버 통신 오류가 발생했습니다.');
+        alert(t('server_error_alert'));
       }
     }
   };
 
   // Reset App Data
   const handleResetData = async () => {
-    if (confirm('모든 데이터를 초기화하고 기본 샘플 데이터로 복원하시겠습니까?')) {
+    if (confirm(t('reset_data_confirm'))) {
       try {
         const res = await fetch(`${API_BASE_URL}/api/reset`, {
           method: 'POST'
         });
 
         if (res.ok) {
-          // Re-fetch data
           const [todosRes, categoriesRes] = await Promise.all([
             fetch(`${API_BASE_URL}/api/todos`),
             fetch(`${API_BASE_URL}/api/categories`)
@@ -332,20 +333,31 @@ function App() {
             setCategories(await categoriesRes.json());
           }
         } else {
-          alert('데이터 초기화에 실패했습니다.');
+          alert(t('reset_data_failed_alert'));
         }
       } catch (err) {
         console.error(err);
-        alert('서버 통신 오류가 발생했습니다.');
+        alert(t('server_error_alert'));
       }
     }
   };
 
   // --- Helper Functions ---
   const getCategoryDetails = (catId: string) => {
-    return categories.find(c => c.id === catId) || {
+    const found = categories.find(c => c.id === catId);
+    if (found) {
+      // For default categories, translate the name
+      if (found.isDefault) {
+        const key = `category_${found.id}`;
+        // @ts-ignore
+        const translatedName = t(key, found.name);
+        return { ...found, name: translatedName };
+      }
+      return found;
+    }
+    return {
       id: 'other',
-      name: '기타',
+      name: t('category_other'),
       color: 'bg-purple-50 dark:bg-purple-950/30',
       textColor: 'text-purple-600 dark:text-purple-400',
       borderColor: 'border-purple-200 dark:border-purple-900/50'
@@ -373,20 +385,16 @@ function App() {
   // --- Filtering & Sorting Logic ---
   const filteredTodos = todos
     .filter(todo => {
-      // Search filter
       const matchesSearch = todo.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
         (todo.description && todo.description.toLowerCase().includes(searchQuery.toLowerCase()));
       
-      // Status filter
       const matchesStatus = 
         filterStatus === 'all' ? true :
         filterStatus === 'active' ? !todo.completed : todo.completed;
 
-      // Priority filter
       const matchesPriority = 
         filterPriority === 'all' ? true : todo.priority === filterPriority;
 
-      // Category filter
       const matchesCategory = 
         filterCategory === 'all' ? true : todo.category === filterCategory;
 
@@ -402,14 +410,12 @@ function App() {
         const priorityWeight = { high: 3, medium: 2, low: 1 };
         return priorityWeight[b.priority] - priorityWeight[a.priority];
       }
-      // Default: createdAt (newest first)
       return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
     });
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 transition-colors duration-300 pb-12">
       
-      {/* --- Header --- */}
       <header className="sticky top-0 z-30 backdrop-blur-md bg-white/80 dark:bg-slate-900/80 border-b border-slate-200/60 dark:border-slate-800/60 transition-colors duration-300">
         <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -418,29 +424,35 @@ function App() {
             </div>
             <div>
               <h1 className="text-xl font-bold tracking-tight bg-gradient-to-r from-indigo-600 to-purple-600 dark:from-indigo-400 dark:to-purple-400 bg-clip-text text-transparent m-0 leading-none">
-                TaskFlow
+                {t('title')}
               </h1>
               <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 font-medium">
-                스마트한 할 일 관리 파트너
+                {t('subtitle')}
               </p>
             </div>
           </div>
 
           <div className="flex items-center gap-2">
-            {/* Reset Button */}
             <button
               onClick={handleResetData}
-              title="데이터 초기화"
+              title={t('reset_data')}
               className="p-2 text-slate-500 hover:text-rose-600 dark:text-slate-400 dark:hover:text-rose-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-all duration-200"
             >
               <RotateCcw className="w-5 h-5" />
             </button>
 
-            {/* Dark Mode Toggle */}
+            <button
+              onClick={() => i18n.changeLanguage(i18n.language === 'en' ? 'ko' : 'en')}
+              className="p-2 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-all duration-200"
+              aria-label="Change Language"
+            >
+              <Languages className="w-5 h-5" />
+            </button>
+
             <button
               onClick={() => setDarkMode(!darkMode)}
               className="p-2 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-all duration-200"
-              aria-label="다크 모드 토글"
+              aria-label={t('toggle_dark_mode')}
             >
               {darkMode ? <Sun className="w-5 h-5 text-amber-400" /> : <Moon className="w-5 h-5 text-indigo-600" />}
             </button>
@@ -453,17 +465,15 @@ function App() {
         {loading ? (
           <div className="flex flex-col items-center justify-center py-24 space-y-4">
             <div className="w-12 h-12 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
-            <p className="text-sm font-semibold text-slate-500 dark:text-slate-400">데이터베이스에서 할 일을 불러오는 중...</p>
+            <p className="text-sm font-semibold text-slate-500 dark:text-slate-400">{t('loading_tasks')}</p>
           </div>
         ) : (
           <>
-            {/* --- Dashboard Statistics --- */}
             <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
               
-              {/* Progress Card */}
               <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200/60 dark:border-slate-800/60 shadow-sm flex flex-col justify-between">
                 <div className="flex items-center justify-between mb-3">
-                  <span className="text-sm font-semibold text-slate-500 dark:text-slate-400">전체 완료율</span>
+                  <span className="text-sm font-semibold text-slate-500 dark:text-slate-400">{t('dashboard_completion_rate')}</span>
                   <span className="p-1.5 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 rounded-lg">
                     <TrendingUp className="w-4 h-4" />
                   </span>
@@ -472,7 +482,7 @@ function App() {
                   <div className="flex items-baseline gap-2 mb-2">
                     <span className="text-3xl font-extrabold tracking-tight">{completionRate}%</span>
                     <span className="text-xs text-slate-400 dark:text-slate-500 font-medium">
-                      ({completedTasks}/{totalTasks} 완료)
+                      {t('dashboard_completed_ratio', { completed: completedTasks, total: totalTasks })}
                     </span>
                   </div>
                   <div className="w-full bg-slate-100 dark:bg-slate-800 h-2 rounded-full overflow-hidden">
@@ -484,40 +494,37 @@ function App() {
                 </div>
               </div>
 
-              {/* Active Tasks Card */}
               <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200/60 dark:border-slate-800/60 shadow-sm flex flex-col justify-between">
                 <div className="flex items-center justify-between mb-3">
-                  <span className="text-sm font-semibold text-slate-500 dark:text-slate-400">진행 중인 할 일</span>
+                  <span className="text-sm font-semibold text-slate-500 dark:text-slate-400">{t('dashboard_active_tasks')}</span>
                   <span className="p-1.5 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 rounded-lg">
                     <ListTodo className="w-4 h-4" />
                   </span>
                 </div>
                 <div>
                   <span className="text-3xl font-extrabold tracking-tight text-emerald-600 dark:text-emerald-400">{activeTasks}</span>
-                  <span className="text-sm font-medium text-slate-400 dark:text-slate-500 ml-1">개 남음</span>
-                  <p className="text-xs text-slate-400 dark:text-slate-500 mt-2">차근차근 하나씩 완료해봐요!</p>
+                  <span className="text-sm font-medium text-slate-400 dark:text-slate-500 ml-1">{t('dashboard_tasks_left')}</span>
+                  <p className="text-xs text-slate-400 dark:text-slate-500 mt-2">{t('dashboard_active_tasks_subtitle')}</p>
                 </div>
               </div>
 
-              {/* High Priority Card */}
               <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200/60 dark:border-slate-800/60 shadow-sm flex flex-col justify-between">
                 <div className="flex items-center justify-between mb-3">
-                  <span className="text-sm font-semibold text-slate-500 dark:text-slate-400">중요 할 일</span>
+                  <span className="text-sm font-semibold text-slate-500 dark:text-slate-400">{t('dashboard_high_priority')}</span>
                   <span className="p-1.5 bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 rounded-lg">
                     <AlertCircle className="w-4 h-4" />
                   </span>
                 </div>
                 <div>
                   <span className="text-3xl font-extrabold tracking-tight text-rose-600 dark:text-rose-400">{highPriorityRemaining}</span>
-                  <span className="text-sm font-medium text-slate-400 dark:text-slate-500 ml-1">개 대기 중</span>
-                  <p className="text-xs text-slate-400 dark:text-slate-500 mt-2">높은 우선순위의 업무입니다.</p>
+                  <span className="text-sm font-medium text-slate-400 dark:text-slate-500 ml-1">{t('dashboard_high_priority_waiting')}</span>
+                  <p className="text-xs text-slate-400 dark:text-slate-500 mt-2">{t('dashboard_high_priority_subtitle')}</p>
                 </div>
               </div>
 
-              {/* Overdue Card */}
               <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200/60 dark:border-slate-800/60 shadow-sm flex flex-col justify-between">
                 <div className="flex items-center justify-between mb-3">
-                  <span className="text-sm font-semibold text-slate-500 dark:text-slate-400">기한 초과</span>
+                  <span className="text-sm font-semibold text-slate-500 dark:text-slate-400">{t('dashboard_overdue')}</span>
                   <span className="p-1.5 bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 rounded-lg">
                     <Clock className="w-4 h-4" />
                   </span>
@@ -526,50 +533,45 @@ function App() {
                   <span className={`text-3xl font-extrabold tracking-tight ${overdueTasksCount > 0 ? 'text-amber-500' : 'text-slate-400 dark:text-slate-500'}`}>
                     {overdueTasksCount}
                   </span>
-                  <span className="text-sm font-medium text-slate-400 dark:text-slate-500 ml-1">개 초과</span>
-                  <p className="text-xs text-slate-400 dark:text-slate-500 mt-2">일정을 다시 확인해보세요.</p>
+                  <span className="text-sm font-medium text-slate-400 dark:text-slate-500 ml-1">{t('dashboard_overdue_count')}</span>
+                  <p className="text-xs text-slate-400 dark:text-slate-500 mt-2">{t('dashboard_overdue_subtitle')}</p>
                 </div>
               </div>
 
             </section>
 
-            {/* --- Main Content Layout --- */}
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
               
-              {/* --- Left Column: Add Task & Category Management --- */}
               <div className="lg:col-span-4 space-y-6">
                 
-                {/* Add Task Card */}
                 <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200/60 dark:border-slate-800/60 shadow-sm">
                   <div className="flex items-center gap-2 mb-4">
                     <Sparkles className="w-5 h-5 text-indigo-500" />
-                    <h2 className="text-lg font-bold tracking-tight m-0">새로운 할 일 추가</h2>
+                    <h2 className="text-lg font-bold tracking-tight m-0">{t('add_new_todo')}</h2>
                   </div>
 
                   <form onSubmit={handleAddTodo} className="space-y-4">
                     
-                    {/* Title */}
                     <div>
                       <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-1.5">
-                        할 일 제목 *
+                        {t('form_title_label')}
                       </label>
                       <input
                         type="text"
                         required
-                        placeholder="예: 주간 업무 보고서 작성"
+                        placeholder={t('form_title_placeholder')}
                         value={newTitle}
                         onChange={(e) => setNewTitle(e.target.value)}
                         className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-sm"
                       />
                     </div>
 
-                    {/* Description */}
                     <div>
                       <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-1.5">
-                        상세 설명 (선택)
+                        {t('form_description_label')}
                       </label>
                       <textarea
-                        placeholder="상세한 내용을 적어주세요."
+                        placeholder={t('form_description_placeholder')}
                         value={newDescription}
                         onChange={(e) => setNewDescription(e.target.value)}
                         rows={3}
@@ -577,12 +579,10 @@ function App() {
                       />
                     </div>
 
-                    {/* Category & Priority Row */}
                     <div className="grid grid-cols-2 gap-4">
-                      {/* Category Select */}
                       <div>
                         <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-1.5">
-                          카테고리
+                          {t('form_category_label')}
                         </label>
                         <select
                           value={newCategory}
@@ -590,32 +590,30 @@ function App() {
                           className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-sm"
                         >
                           {categories.map(cat => (
-                            <option key={cat.id} value={cat.id}>{cat.name}</option>
+                            <option key={cat.id} value={cat.id}>{getCategoryDetails(cat.id).name}</option>
                           ))}
                         </select>
                       </div>
 
-                      {/* Priority Select */}
                       <div>
                         <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-1.5">
-                          우선순위
+                          {t('form_priority_label')}
                         </label>
                         <select
                           value={newPriority}
                           onChange={(e) => setNewPriority(e.target.value as 'low' | 'medium' | 'high')}
                           className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-sm"
                         >
-                          <option value="low">낮음 🟢</option>
-                          <option value="medium">중간 🟡</option>
-                          <option value="high">높음 🔴</option>
+                          <option value="low">{t('priority_low')}</option>
+                          <option value="medium">{t('priority_medium')}</option>
+                          <option value="high">{t('priority_high')}</option>
                         </select>
                       </div>
                     </div>
 
-                    {/* Due Date */}
                     <div>
                       <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-1.5">
-                        마감일 (선택)
+                        {t('form_due_date_label')}
                       </label>
                       <div className="relative">
                         <input
@@ -628,24 +626,22 @@ function App() {
                       </div>
                     </div>
 
-                    {/* Submit Button */}
                     <button
                       type="submit"
                       className="w-full py-3 px-4 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-semibold rounded-xl shadow-md shadow-indigo-500/10 hover:shadow-indigo-500/20 active:scale-[0.98] transition-all duration-200 flex items-center justify-center gap-2 text-sm"
                     >
                       <Plus className="w-4 h-4" />
-                      할 일 추가하기
+                      {t('add_todo_button')}
                     </button>
 
                   </form>
                 </div>
 
-                {/* Category Management Card */}
                 <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200/60 dark:border-slate-800/60 shadow-sm">
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-2">
                       <Tag className="w-5 h-5 text-purple-500" />
-                      <h2 className="text-lg font-bold tracking-tight m-0">카테고리 관리</h2>
+                      <h2 className="text-lg font-bold tracking-tight m-0">{t('category_management')}</h2>
                     </div>
                     <button
                       onClick={() => setShowAddCategory(!showAddCategory)}
@@ -655,22 +651,21 @@ function App() {
                     </button>
                   </div>
 
-                  {/* Add Category Form */}
                   {showAddCategory && (
                     <form onSubmit={handleAddCategory} className="mb-4 p-3.5 bg-slate-50 dark:bg-slate-950 rounded-xl border border-slate-200 dark:border-slate-800 space-y-3">
                       <div>
-                        <label className="block text-xs font-semibold text-slate-500 mb-1">카테고리 이름</label>
+                        <label className="block text-xs font-semibold text-slate-500 mb-1">{t('add_category_form_name_label')}</label>
                         <input
                           type="text"
                           required
-                          placeholder="예: 공부, 가계부"
+                          placeholder={t('add_category_form_name_placeholder')}
                           value={newCategoryName}
                           onChange={(e) => setNewCategoryName(e.target.value)}
                           className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-xs"
                         />
                       </div>
                       <div>
-                        <label className="block text-xs font-semibold text-slate-500 mb-1.5">색상 선택</label>
+                        <label className="block text-xs font-semibold text-slate-500 mb-1.5">{t('add_category_form_color_label')}</label>
                         <div className="flex flex-wrap gap-1.5">
                           {COLOR_OPTIONS.map((opt, idx) => (
                             <button
@@ -689,25 +684,25 @@ function App() {
                         type="submit"
                         className="w-full py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg text-xs transition-colors"
                       >
-                        카테고리 생성
+                        {t('create_category_button')}
                       </button>
                     </form>
                   )}
 
-                  {/* Category List */}
                   <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
                     {categories.map(cat => {
+                      const categoryDetails = getCategoryDetails(cat.id);
                       return (
                         <div
                           key={cat.id}
-                          className={`flex items-center justify-between px-3 py-2 rounded-xl border ${cat.color} ${cat.borderColor} text-xs font-medium`}
+                          className={`flex items-center justify-between px-3 py-2 rounded-xl border ${categoryDetails.color} ${categoryDetails.borderColor} text-xs font-medium`}
                         >
-                          <span className={cat.textColor}>{cat.name}</span>
+                          <span className={categoryDetails.textColor}>{categoryDetails.name}</span>
                           {!cat.isDefault && (
                             <button
                               onClick={() => handleDeleteCategory(cat.id)}
                               className="text-slate-400 hover:text-rose-500 dark:text-slate-500 dark:hover:text-rose-400 transition-colors"
-                              title="삭제"
+                              title={t('delete_button_title')}
                             >
                               <X className="w-3.5 h-3.5" />
                             </button>
@@ -720,17 +715,14 @@ function App() {
 
               </div>
 
-              {/* --- Right Column: Task List, Search & Filters --- */}
               <div className="lg:col-span-8 space-y-6">
                 
-                {/* Search, Filter & Sort Controls */}
                 <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200/60 dark:border-slate-800/60 shadow-sm space-y-4">
                   
-                  {/* Search Bar */}
                   <div className="relative">
                     <input
                       type="text"
-                      placeholder="할 일 제목 또는 상세 설명 검색..."
+                      placeholder={t('form_title_placeholder')}
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       className="w-full pl-11 pr-4 py-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-sm"
@@ -746,34 +738,30 @@ function App() {
                     )}
                   </div>
 
-                  {/* Filters Header Toggle */}
                   <div className="flex flex-wrap items-center justify-between gap-3 pt-1 border-t border-slate-100 dark:border-slate-800/60">
                     <div className="flex items-center gap-1.5 text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-wider">
                       <SlidersHorizontal className="w-3.5 h-3.5" />
-                      필터 및 정렬
+                      {t('filters_and_sorting')}
                     </div>
                     
-                    {/* Sort By Dropdown */}
                     <div className="flex items-center gap-2 text-xs">
-                      <span className="text-slate-400 font-medium">정렬 기준:</span>
+                      <span className="text-slate-400 font-medium">{t('sort_by_label')}</span>
                       <select
                         value={sortBy}
                         onChange={(e) => setSortBy(e.target.value as 'dueDate' | 'priority' | 'createdAt')}
                         className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-2.5 py-1.5 text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-indigo-500"
                       >
-                        <option value="dueDate">마감일 순</option>
-                        <option value="priority">우선순위 순</option>
-                        <option value="createdAt">생성일 순</option>
+                        <option value="dueDate">{t('sort_by_due_date')}</option>
+                        <option value="priority">{t('sort_by_priority')}</option>
+                        <option value="createdAt">{t('sort_by_created_at')}</option>
                       </select>
                     </div>
                   </div>
 
-                  {/* Filter Options Grid */}
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
                     
-                    {/* Status Filter */}
                     <div>
-                      <span className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-1.5">진행 상태</span>
+                      <span className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-1.5">{t('filter_status_label')}</span>
                       <div className="flex bg-slate-50 dark:bg-slate-950 p-1 rounded-xl border border-slate-200 dark:border-slate-800">
                         {(['all', 'active', 'completed'] as const).map((status) => (
                           <button
@@ -785,15 +773,14 @@ function App() {
                                 : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
                             }`}
                           >
-                            {status === 'all' ? '전체' : status === 'active' ? '진행중' : '완료'}
+                            {t(`filter_status_${status}`)}
                           </button>
                         ))}
                       </div>
                     </div>
 
-                    {/* Priority Filter */}
                     <div>
-                      <span className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-1.5">우선순위</span>
+                      <span className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-1.5">{t('filter_priority_label')}</span>
                       <div className="flex bg-slate-50 dark:bg-slate-950 p-1 rounded-xl border border-slate-200 dark:border-slate-800">
                         {(['all', 'high', 'medium', 'low'] as const).map((prio) => (
                           <button
@@ -805,23 +792,22 @@ function App() {
                                 : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
                             }`}
                           >
-                            {prio === 'all' ? '전체' : prio === 'high' ? '높음' : prio === 'medium' ? '중간' : '낮음'}
+                            {t(`filter_priority_${prio}`)}
                           </button>
                         ))}
                       </div>
                     </div>
 
-                    {/* Category Filter */}
                     <div>
-                      <span className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-1.5">카테고리</span>
+                      <span className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-1.5">{t('filter_category_label')}</span>
                       <select
                         value={filterCategory}
                         onChange={(e) => setFilterCategory(e.target.value)}
                         className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-xs font-semibold"
                       >
-                        <option value="all">전체 카테고리</option>
+                        <option value="all">{t('filter_category_all')}</option>
                         {categories.map(cat => (
-                          <option key={cat.id} value={cat.id}>{cat.name}</option>
+                          <option key={cat.id} value={cat.id}>{getCategoryDetails(cat.id).name}</option>
                         ))}
                       </select>
                     </div>
@@ -830,11 +816,10 @@ function App() {
 
                 </div>
 
-                {/* --- Task List --- */}
                 <div className="space-y-3">
                   <div className="flex items-center justify-between px-1">
                     <span className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
-                      할 일 목록 ({filteredTodos.length}개)
+                      {t('todo_list_count', { count: filteredTodos.length })}
                     </span>
                   </div>
 
@@ -843,11 +828,11 @@ function App() {
                       <div className="w-16 h-16 bg-slate-50 dark:bg-slate-950 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-400 dark:text-slate-600">
                         <ListTodo className="w-8 h-8" />
                       </div>
-                      <h3 className="text-base font-bold text-slate-700 dark:text-slate-300 mb-1">할 일이 없습니다</h3>
+                      <h3 className="text-base font-bold text-slate-700 dark:text-slate-300 mb-1">{t('no_todos_title')}</h3>
                       <p className="text-xs text-slate-400 dark:text-slate-500 max-w-xs mx-auto">
                         {searchQuery || filterStatus !== 'all' || filterPriority !== 'all' || filterCategory !== 'all'
-                          ? '설정한 필터에 부합하는 할 일이 없습니다. 필터를 변경해보세요!'
-                          : '새로운 할 일을 추가하고 일정을 관리해보세요.'}
+                          ? t('no_todos_filtered_subtitle')
+                          : t('no_todos_subtitle')}
                       </p>
                     </div>
                   ) : (
@@ -869,7 +854,6 @@ function App() {
                           >
                             <div className="p-4 sm:p-5 flex items-start gap-4">
                               
-                              {/* Checkbox */}
                               <button
                                 onClick={() => handleToggleTodo(todo.id)}
                                 className="mt-0.5 text-slate-300 hover:text-indigo-500 dark:text-slate-700 dark:hover:text-indigo-400 transition-colors focus:outline-none"
@@ -881,15 +865,12 @@ function App() {
                                 )}
                               </button>
 
-                              {/* Content */}
                               <div className="flex-1 min-w-0">
                                 <div className="flex flex-wrap items-center gap-2 mb-1.5">
-                                  {/* Category Badge */}
                                   <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold border ${cat.color} ${cat.borderColor} ${cat.textColor}`}>
                                     {cat.name}
                                   </span>
 
-                                  {/* Priority Badge */}
                                   <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold ${
                                     todo.priority === 'high' 
                                       ? 'bg-rose-50 dark:bg-rose-950/30 text-rose-600 dark:text-rose-400 border border-rose-100 dark:border-rose-900/30' 
@@ -897,10 +878,9 @@ function App() {
                                         ? 'bg-amber-50 dark:bg-amber-950/30 text-amber-600 dark:text-amber-400 border border-amber-100 dark:border-amber-900/30'
                                         : 'bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-100 dark:border-slate-700'
                                   }`}>
-                                    {todo.priority === 'high' ? '높음' : todo.priority === 'medium' ? '중간' : '낮음'}
+                                    {t(`priority_${todo.priority}`)}
                                   </span>
 
-                                  {/* Due Date Badge */}
                                   {todo.dueDate && (
                                     <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold ${
                                       overdue 
@@ -908,19 +888,17 @@ function App() {
                                         : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700'
                                     }`}>
                                       <Calendar className="w-3 h-3" />
-                                      {todo.dueDate} {overdue && '기한 초과!'}
+                                      {todo.dueDate} {overdue && t('due_date_overdue')}
                                     </span>
                                   )}
                                 </div>
 
-                                {/* Title */}
                                 <h3 className={`text-sm sm:text-base font-bold tracking-tight text-slate-800 dark:text-slate-100 mb-1 break-words ${
                                   todo.completed ? 'line-through text-slate-400 dark:text-slate-500' : ''
                                 }`}>
                                   {todo.title}
                                 </h3>
 
-                                {/* Description */}
                                 {todo.description && (
                                   <p className={`text-xs sm:text-sm text-slate-500 dark:text-slate-400 break-words ${
                                     todo.completed ? 'line-through text-slate-400/80 dark:text-slate-500/80' : ''
@@ -930,22 +908,19 @@ function App() {
                                 )}
                               </div>
 
-                              {/* Action Buttons */}
                               <div className="flex items-center gap-1 sm:opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity duration-200">
-                                {/* Edit Button */}
                                 <button
                                   onClick={() => setEditingTodo(todo)}
                                   className="p-1.5 text-slate-400 hover:text-indigo-600 dark:text-slate-500 dark:hover:text-indigo-400 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg transition-colors"
-                                  title="수정"
+                                  title={t('edit_button_title')}
                                 >
                                   <Edit3 className="w-4 h-4" />
                                 </button>
 
-                                {/* Delete Button */}
                                 <button
                                   onClick={() => handleDeleteTodo(todo.id)}
                                   className="p-1.5 text-slate-400 hover:text-rose-600 dark:text-slate-500 dark:hover:text-rose-400 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg transition-colors"
-                                  title="삭제"
+                                  title={t('delete_button_title')}
                                 >
                                   <Trash2 className="w-4 h-4" />
                                 </button>
@@ -967,13 +942,12 @@ function App() {
 
       </main>
 
-      {/* --- Edit Todo Modal --- */}
       {editingTodo && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm animate-fade-in">
           <div className="bg-white dark:bg-slate-900 w-full max-w-md rounded-2xl border border-slate-200/60 dark:border-slate-800/60 shadow-xl overflow-hidden animate-scale-up">
             
             <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-slate-800/60">
-              <h3 className="text-base font-bold tracking-tight">할 일 수정</h3>
+              <h3 className="text-base font-bold tracking-tight">{t('edit_todo_modal_title')}</h3>
               <button
                 onClick={() => setEditingTodo(null)}
                 className="p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg transition-colors"
@@ -983,10 +957,9 @@ function App() {
             </div>
 
             <form onSubmit={handleUpdateTodo} className="p-6 space-y-4">
-              {/* Title */}
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-1.5">
-                  할 일 제목 *
+                  {t('form_title_label')}
                 </label>
                 <input
                   type="text"
@@ -997,10 +970,9 @@ function App() {
                 />
               </div>
 
-              {/* Description */}
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-1.5">
-                  상세 설명
+                  {t('form_description_label')}
                 </label>
                 <textarea
                   value={editingTodo.description || ''}
@@ -1010,12 +982,10 @@ function App() {
                 />
               </div>
 
-              {/* Category & Priority Row */}
               <div className="grid grid-cols-2 gap-4">
-                {/* Category Select */}
                 <div>
                   <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-1.5">
-                    카테고리
+                    {t('form_category_label')}
                   </label>
                   <select
                     value={editingTodo.category}
@@ -1023,32 +993,30 @@ function App() {
                     className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-sm"
                   >
                     {categories.map(cat => (
-                      <option key={cat.id} value={cat.id}>{cat.name}</option>
+                      <option key={cat.id} value={cat.id}>{getCategoryDetails(cat.id).name}</option>
                     ))}
                   </select>
                 </div>
 
-                {/* Priority Select */}
                 <div>
                   <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-1.5">
-                    우선순위
+                    {t('form_priority_label')}
                   </label>
                   <select
                     value={editingTodo.priority}
                     onChange={(e) => setEditingTodo({ ...editingTodo, priority: e.target.value as 'low' | 'medium' | 'high' })}
                     className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-sm"
                   >
-                    <option value="low">낮음 🟢</option>
-                    <option value="medium">중간 🟡</option>
-                    <option value="high">높음 🔴</option>
+                    <option value="low">{t('priority_low')}</option>
+                    <option value="medium">{t('priority_medium')}</option>
+                    <option value="high">{t('priority_high')}</option>
                   </select>
                 </div>
               </div>
 
-              {/* Due Date */}
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-1.5">
-                  마감일
+                  {t('form_due_date_label')}
                 </label>
                 <div className="relative">
                   <input
@@ -1061,30 +1029,27 @@ function App() {
                 </div>
               </div>
 
-              {/* Action Buttons */}
-              <div className="flex gap-3 pt-2">
+              <div className="flex justify-end gap-3 pt-2">
                 <button
                   type="button"
                   onClick={() => setEditingTodo(null)}
-                  className="flex-1 py-2.5 border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 font-semibold rounded-xl text-sm transition-colors"
+                  className="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-semibold rounded-xl text-sm transition-colors"
                 >
                   취소
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl text-sm transition-colors"
+                  className="px-5 py-2.5 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-semibold rounded-xl shadow-md shadow-indigo-500/10 hover:shadow-indigo-500/20 active:scale-[0.98] transition-all duration-200 text-sm"
                 >
-                  저장하기
+                  {t('update_todo_button')}
                 </button>
               </div>
             </form>
-
           </div>
         </div>
       )}
-
     </div>
-  )
+  );
 }
 
-export default App
+export default App;
