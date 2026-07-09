@@ -25,6 +25,14 @@ import {
 } from 'lucide-react'
 
 // Interfaces
+interface SubTask {
+  id: string;
+  todoId: string;
+  title: string;
+  completed: boolean;
+  createdAt: string;
+}
+
 interface Todo {
   id: string;
   title: string;
@@ -34,7 +42,10 @@ interface Todo {
   priority: 'low' | 'medium' | 'high';
   category: string;
   createdAt: string;
+  subTasks: SubTask[];
 }
+
+type TodoResponse = Omit<Todo, 'subTasks'> & { subTasks?: SubTask[] };
 
 interface Category {
   id: string;
@@ -49,6 +60,11 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001';
 
 function App() {
   const { t, i18n } = useTranslation();
+
+  const normalizeTodo = (todo: TodoResponse): Todo => ({
+    ...todo,
+    subTasks: todo.subTasks ?? []
+  });
 
   const COLOR_OPTIONS = [
     { name: t('color_blue'), color: 'bg-blue-50 dark:bg-blue-950/30', textColor: 'text-blue-600 dark:text-blue-400', borderColor: 'border-blue-200 dark:border-blue-900/50' },
@@ -79,6 +95,7 @@ function App() {
   const [newCategory, setNewCategory] = useState('work');
   const [newPriority, setNewPriority] = useState<'low' | 'medium' | 'high'>('medium');
   const [newDueDate, setNewDueDate] = useState('');
+  const [newSubTaskTitles, setNewSubTaskTitles] = useState<Record<string, string>>({});
 
   // Category Form States
   const [showAddCategory, setShowAddCategory] = useState(false);
@@ -106,9 +123,9 @@ function App() {
         ]);
 
         if (todosRes.ok && categoriesRes.ok) {
-          const todosData = await todosRes.json();
+          const todosData: TodoResponse[] = await todosRes.json();
           const categoriesData = await categoriesRes.json();
-          setTodos(todosData);
+          setTodos(todosData.map(normalizeTodo));
           setCategories(categoriesData);
         } else {
           console.error('Failed to fetch initial data');
@@ -147,7 +164,8 @@ function App() {
       dueDate: newDueDate || undefined,
       priority: newPriority,
       category: newCategory,
-      createdAt: new Date().toISOString()
+      createdAt: new Date().toISOString(),
+      subTasks: []
     };
 
     try {
@@ -158,8 +176,8 @@ function App() {
       });
 
       if (res.ok) {
-        const savedTodo = await res.json();
-        setTodos([savedTodo, ...todos]);
+        const savedTodo: TodoResponse = await res.json();
+        setTodos([normalizeTodo(savedTodo), ...todos]);
         setNewTitle('');
         setNewDescription('');
         setNewDueDate('');
@@ -188,8 +206,8 @@ function App() {
       });
 
       if (res.ok) {
-        const savedTodo = await res.json();
-        setTodos(todos.map(todo => todo.id === id ? savedTodo : todo));
+        const savedTodo: TodoResponse = await res.json();
+        setTodos(todos.map(todo => todo.id === id ? normalizeTodo(savedTodo) : todo));
       } else {
         alert(t('toggle_todo_failed_alert'));
       }
@@ -208,6 +226,11 @@ function App() {
 
       if (res.ok) {
         setTodos(todos.filter(todo => todo.id !== id));
+        setNewSubTaskTitles(prev => {
+          const updated = { ...prev };
+          delete updated[id];
+          return updated;
+        });
       } else {
         alert(t('delete_todo_failed_alert'));
       }
@@ -230,11 +253,104 @@ function App() {
       });
 
       if (res.ok) {
-        const savedTodo = await res.json();
-        setTodos(todos.map(todo => todo.id === editingTodo.id ? savedTodo : todo));
+        const savedTodo: TodoResponse = await res.json();
+        setTodos(todos.map(todo => todo.id === editingTodo.id ? normalizeTodo(savedTodo) : todo));
         setEditingTodo(null);
       } else {
         alert(t('update_todo_failed_alert'));
+      }
+    } catch (err) {
+      console.error(err);
+      alert(t('server_error_alert'));
+    }
+  };
+
+  // Add Sub Task
+  const handleAddSubTask = async (todoId: string, e: React.FormEvent) => {
+    e.preventDefault();
+    const title = (newSubTaskTitles[todoId] || '').trim();
+    if (!title) return;
+
+    const newSubTask = {
+      id: crypto.randomUUID(),
+      title,
+      completed: false,
+      createdAt: new Date().toISOString()
+    };
+
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/todos/${todoId}/subtasks`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newSubTask)
+      });
+
+      if (res.ok) {
+        const savedSubTask: SubTask = await res.json();
+        setTodos(prevTodos => prevTodos.map(todo =>
+          todo.id === todoId
+            ? { ...todo, subTasks: [...todo.subTasks, savedSubTask] }
+            : todo
+        ));
+        setNewSubTaskTitles(prev => ({ ...prev, [todoId]: '' }));
+      } else {
+        alert(t('add_subtask_failed_alert'));
+      }
+    } catch (err) {
+      console.error(err);
+      alert(t('server_error_alert'));
+    }
+  };
+
+  // Toggle Sub Task Completion
+  const handleToggleSubTask = async (todoId: string, subTaskId: string) => {
+    const targetTodo = todos.find(todo => todo.id === todoId);
+    const targetSubTask = targetTodo?.subTasks.find(subTask => subTask.id === subTaskId);
+    if (!targetSubTask) return;
+
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/todos/${todoId}/subtasks/${subTaskId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ completed: !targetSubTask.completed })
+      });
+
+      if (res.ok) {
+        const savedSubTask: SubTask = await res.json();
+        setTodos(prevTodos => prevTodos.map(todo =>
+          todo.id === todoId
+            ? {
+                ...todo,
+                subTasks: todo.subTasks.map(subTask =>
+                  subTask.id === subTaskId ? savedSubTask : subTask
+                )
+              }
+            : todo
+        ));
+      } else {
+        alert(t('toggle_subtask_failed_alert'));
+      }
+    } catch (err) {
+      console.error(err);
+      alert(t('server_error_alert'));
+    }
+  };
+
+  // Delete Sub Task
+  const handleDeleteSubTask = async (todoId: string, subTaskId: string) => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/todos/${todoId}/subtasks/${subTaskId}`, {
+        method: 'DELETE'
+      });
+
+      if (res.ok) {
+        setTodos(prevTodos => prevTodos.map(todo =>
+          todo.id === todoId
+            ? { ...todo, subTasks: todo.subTasks.filter(subTask => subTask.id !== subTaskId) }
+            : todo
+        ));
+      } else {
+        alert(t('delete_subtask_failed_alert'));
       }
     } catch (err) {
       console.error(err);
@@ -329,8 +445,10 @@ function App() {
           ]);
 
           if (todosRes.ok && categoriesRes.ok) {
-            setTodos(await todosRes.json());
+            const todosData: TodoResponse[] = await todosRes.json();
+            setTodos(todosData.map(normalizeTodo));
             setCategories(await categoriesRes.json());
+            setNewSubTaskTitles({});
           }
         } else {
           alert(t('reset_data_failed_alert'));
@@ -840,6 +958,7 @@ function App() {
                       {filteredTodos.map(todo => {
                         const cat = getCategoryDetails(todo.category);
                         const overdue = isOverdue(todo.dueDate, todo.completed);
+                        const completedSubTasksCount = todo.subTasks.filter(subTask => subTask.completed).length;
                         
                         return (
                           <div
@@ -906,6 +1025,73 @@ function App() {
                                     {todo.description}
                                   </p>
                                 )}
+
+                                <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-800/60">
+                                  <div className="flex items-center justify-between mb-2">
+                                    <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                                      {t('subtasks_title')}
+                                    </span>
+                                    <span className="text-[11px] font-semibold text-slate-400 dark:text-slate-500">
+                                      {t('subtasks_progress', { completed: completedSubTasksCount, total: todo.subTasks.length })}
+                                    </span>
+                                  </div>
+
+                                  {todo.subTasks.length === 0 ? (
+                                    <p className="text-xs text-slate-400 dark:text-slate-500">{t('no_subtasks')}</p>
+                                  ) : (
+                                    <div className="space-y-1.5">
+                                      {todo.subTasks.map(subTask => (
+                                        <div key={subTask.id} className="flex items-center gap-2">
+                                          <button
+                                            onClick={() => handleToggleSubTask(todo.id, subTask.id)}
+                                            className="text-slate-300 hover:text-indigo-500 dark:text-slate-700 dark:hover:text-indigo-400 transition-colors"
+                                            title={t('toggle_subtask_button_title')}
+                                          >
+                                            {subTask.completed ? (
+                                              <CheckCircle2 className="w-4 h-4 text-indigo-500 dark:text-indigo-400" />
+                                            ) : (
+                                              <Circle className="w-4 h-4" />
+                                            )}
+                                          </button>
+
+                                          <span className={`flex-1 text-xs break-words ${
+                                            subTask.completed
+                                              ? 'line-through text-slate-400 dark:text-slate-500'
+                                              : 'text-slate-600 dark:text-slate-300'
+                                          }`}>
+                                            {subTask.title}
+                                          </span>
+
+                                          <button
+                                            onClick={() => handleDeleteSubTask(todo.id, subTask.id)}
+                                            className="p-1 text-slate-400 hover:text-rose-600 dark:text-slate-500 dark:hover:text-rose-400 rounded-md transition-colors"
+                                            title={t('delete_subtask_button_title')}
+                                          >
+                                            <Trash2 className="w-3.5 h-3.5" />
+                                          </button>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  )}
+
+                                  {!todo.completed && (
+                                    <form onSubmit={(e) => handleAddSubTask(todo.id, e)} className="mt-2 flex items-center gap-2">
+                                      <input
+                                        type="text"
+                                        value={newSubTaskTitles[todo.id] || ''}
+                                        onChange={(e) => setNewSubTaskTitles(prev => ({ ...prev, [todo.id]: e.target.value }))}
+                                        placeholder={t('subtask_input_placeholder')}
+                                        className="flex-1 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+                                      />
+                                      <button
+                                        type="submit"
+                                        className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-lg transition-colors"
+                                      >
+                                        {t('add_subtask_button')}
+                                      </button>
+                                    </form>
+                                  )}
+                                </div>
                               </div>
 
                               <div className="flex items-center gap-1 sm:opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity duration-200">

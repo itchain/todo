@@ -16,6 +16,47 @@ const pool = new pg.Pool({
   connectionString: process.env.DATABASE_URL || 'postgresql://postgres:postgres@db:5432/taskflow',
 });
 
+const formatSubTask = (subTask) => ({
+  id: subTask.id,
+  todoId: subTask.todo_id,
+  title: subTask.title,
+  completed: subTask.completed,
+  createdAt: subTask.created_at,
+});
+
+const formatTodo = (todo, subTasks = []) => ({
+  id: todo.id,
+  title: todo.title,
+  description: todo.description,
+  completed: todo.completed,
+  dueDate: todo.due_date,
+  priority: todo.priority,
+  category: todo.category_id,
+  createdAt: todo.created_at,
+  subTasks,
+});
+
+const getSubTasksMap = async (todoIds) => {
+  if (todoIds.length === 0) {
+    return new Map();
+  }
+
+  const { rows } = await pool.query(
+    'SELECT * FROM sub_tasks WHERE todo_id = ANY($1::varchar[]) ORDER BY created_at ASC',
+    [todoIds]
+  );
+
+  const map = new Map();
+  for (const row of rows) {
+    const formatted = formatSubTask(row);
+    const current = map.get(row.todo_id) || [];
+    current.push(formatted);
+    map.set(row.todo_id, current);
+  }
+
+  return map;
+};
+
 // Database Initialization
 const initDb = async () => {
   const client = await pool.connect();
@@ -44,6 +85,17 @@ const initDb = async () => {
         due_date VARCHAR(50),
         priority VARCHAR(20) NOT NULL,
         category_id VARCHAR(50) REFERENCES categories(id) ON DELETE SET NULL,
+        created_at VARCHAR(100) NOT NULL
+      )
+    `);
+
+    // Create Sub Tasks Table
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS sub_tasks (
+        id VARCHAR(50) PRIMARY KEY,
+        todo_id VARCHAR(50) NOT NULL REFERENCES todos(id) ON DELETE CASCADE,
+        title VARCHAR(255) NOT NULL,
+        completed BOOLEAN DEFAULT FALSE,
         created_at VARCHAR(100) NOT NULL
       )
     `);
@@ -94,6 +146,19 @@ const initDb = async () => {
         await client.query(
           'INSERT INTO todos (id, title, description, completed, due_date, priority, category_id, created_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)',
           todo
+        );
+      }
+
+      const sampleSubTasks = [
+        ['1-1', '1', '대시보드 지표 확인하기', true, new Date().toISOString()],
+        ['1-2', '1', '카테고리 필터 사용해보기', false, new Date().toISOString()],
+        ['2-1', '2', '아침에 물 500ml 마시기', true, new Date().toISOString()],
+      ];
+
+      for (const subTask of sampleSubTasks) {
+        await client.query(
+          'INSERT INTO sub_tasks (id, todo_id, title, completed, created_at) VALUES ($1, $2, $3, $4, $5)',
+          subTask
         );
       }
     }
@@ -179,16 +244,8 @@ app.delete('/api/categories/:id', async (req, res) => {
 app.get('/api/todos', async (req, res) => {
   try {
     const { rows } = await pool.query('SELECT * FROM todos ORDER BY created_at DESC');
-    const formattedTodos = rows.map(todo => ({
-      id: todo.id,
-      title: todo.title,
-      description: todo.description,
-      completed: todo.completed,
-      dueDate: todo.due_date,
-      priority: todo.priority,
-      category: todo.category_id,
-      createdAt: todo.created_at
-    }));
+    const subTasksMap = await getSubTasksMap(rows.map((todo) => todo.id));
+    const formattedTodos = rows.map((todo) => formatTodo(todo, subTasksMap.get(todo.id) || []));
     res.json(formattedTodos);
   } catch (err) {
     console.error(err);
@@ -204,16 +261,7 @@ app.post('/api/todos', async (req, res) => {
       [id, title, description, completed, dueDate, priority, category, createdAt]
     );
     const todo = rows[0];
-    res.status(201).json({
-      id: todo.id,
-      title: todo.title,
-      description: todo.description,
-      completed: todo.completed,
-      dueDate: todo.due_date,
-      priority: todo.priority,
-      category: todo.category_id,
-      createdAt: todo.created_at
-    });
+    res.status(201).json(formatTodo(todo, []));
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Server error creating todo' });
@@ -232,16 +280,8 @@ app.put('/api/todos/:id', async (req, res) => {
       return res.status(404).json({ error: 'Todo not found' });
     }
     const todo = rows[0];
-    res.json({
-      id: todo.id,
-      title: todo.title,
-      description: todo.description,
-      completed: todo.completed,
-      dueDate: todo.due_date,
-      priority: todo.priority,
-      category: todo.category_id,
-      createdAt: todo.created_at
-    });
+    const subTasksMap = await getSubTasksMap([todo.id]);
+    res.json(formatTodo(todo, subTasksMap.get(todo.id) || []));
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Server error updating todo' });
@@ -259,6 +299,98 @@ app.delete('/api/todos/:id', async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Server error deleting todo' });
+  }
+});
+
+// 3. Sub Tasks API
+app.get('/api/todos/:todoId/subtasks', async (req, res) => {
+  const { todoId } = req.params;
+  try {
+    const { rows: todoRows } = await pool.query('SELECT id FROM todos WHERE id = $1', [todoId]);
+    if (todoRows.length === 0) {
+      return res.status(404).json({ error: 'Todo not found' });
+    }
+
+    const { rows } = await pool.query(
+      'SELECT * FROM sub_tasks WHERE todo_id = $1 ORDER BY created_at ASC',
+      [todoId]
+    );
+    res.json(rows.map(formatSubTask));
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error fetching sub tasks' });
+  }
+});
+
+app.post('/api/todos/:todoId/subtasks', async (req, res) => {
+  const { todoId } = req.params;
+  const { id, title, completed, createdAt } = req.body;
+
+  if (!title || !title.trim()) {
+    return res.status(400).json({ error: 'Sub task title is required' });
+  }
+
+  try {
+    const { rows } = await pool.query(
+      'INSERT INTO sub_tasks (id, todo_id, title, completed, created_at) VALUES ($1, $2, $3, $4, $5) RETURNING *',
+      [id, todoId, title.trim(), completed ?? false, createdAt || new Date().toISOString()]
+    );
+
+    res.status(201).json(formatSubTask(rows[0]));
+  } catch (err) {
+    console.error(err);
+    if (err.code === '23503') {
+      return res.status(404).json({ error: 'Todo not found' });
+    }
+    res.status(500).json({ error: 'Server error creating sub task' });
+  }
+});
+
+app.put('/api/todos/:todoId/subtasks/:subTaskId', async (req, res) => {
+  const { todoId, subTaskId } = req.params;
+  const { title, completed } = req.body;
+
+  if (title !== undefined && !String(title).trim()) {
+    return res.status(400).json({ error: 'Sub task title cannot be empty' });
+  }
+
+  try {
+    const { rows } = await pool.query(
+      `UPDATE sub_tasks
+       SET title = COALESCE($1, title), completed = COALESCE($2, completed)
+       WHERE id = $3 AND todo_id = $4
+       RETURNING *`,
+      [title !== undefined ? String(title).trim() : null, completed ?? null, subTaskId, todoId]
+    );
+
+    if (rows.length === 0) {
+      return res.status(404).json({ error: 'Sub task not found' });
+    }
+
+    res.json(formatSubTask(rows[0]));
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error updating sub task' });
+  }
+});
+
+app.delete('/api/todos/:todoId/subtasks/:subTaskId', async (req, res) => {
+  const { todoId, subTaskId } = req.params;
+
+  try {
+    const { rowCount } = await pool.query(
+      'DELETE FROM sub_tasks WHERE id = $1 AND todo_id = $2',
+      [subTaskId, todoId]
+    );
+
+    if (rowCount === 0) {
+      return res.status(404).json({ error: 'Sub task not found' });
+    }
+
+    res.json({ message: 'Sub task deleted successfully' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error deleting sub task' });
   }
 });
 
@@ -315,6 +447,19 @@ app.post('/api/reset', async (req, res) => {
       await client.query(
         'INSERT INTO todos (id, title, description, completed, due_date, priority, category_id, created_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)',
         todo
+      );
+    }
+
+    const sampleSubTasks = [
+      ['1-1', '1', '대시보드 지표 확인하기', true, new Date().toISOString()],
+      ['1-2', '1', '카테고리 필터 사용해보기', false, new Date().toISOString()],
+      ['2-1', '2', '아침에 물 500ml 마시기', true, new Date().toISOString()],
+    ];
+
+    for (const subTask of sampleSubTasks) {
+      await client.query(
+        'INSERT INTO sub_tasks (id, todo_id, title, completed, created_at) VALUES ($1, $2, $3, $4, $5)',
+        subTask
       );
     }
 

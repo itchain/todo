@@ -71,3 +71,9 @@ docker-compose up -d --build
 2.  **빌드 오류 해결**: 비표준적인 프로젝트 구조(루트 `index.html`, 잘못된 `tsconfig.json` 참조 등)로 인해 발생한 여러 빌드 오류를 해결했습니다. 이를 위해 `index.html`을 `frontend` 디렉토리로 이동하고 `tsconfig.json`을 표준 설정으로 수정하여 프로젝트 구조를 정상화했습니다.
 3.  **다국어 지원 추가**: `i18next`를 도입하여 영어와 한국어를 지원하도록 애플리케이션을 리팩토링했습니다.
 4.  **원격 저장소 설정**: GitHub에 원격 저장소를 생성하고 모든 코드를 푸시했습니다.
+5.  **서브태스크(Sub-task) 기능 추가**:
+    -   백엔드(`backend/src/server.js`): `sub_tasks` 테이블을 초기화 로직에 추가하고, 할 일 조회/생성/수정 응답에 `subTasks`를 포함하도록 확장했습니다.
+    -   백엔드 API: `GET/POST/PUT/DELETE /api/todos/:todoId/subtasks` 엔드포인트를 추가해 서브태스크 CRUD를 지원합니다.
+    -   초기/리셋 샘플 데이터: 서브태스크 샘플 레코드를 함께 삽입하도록 보강했습니다.
+    -   프론트엔드(`frontend/src/App.tsx`): `Todo` 타입에 `subTasks`를 포함하고, 서브태스크 추가/완료 토글/삭제 UI 및 핸들러를 구현했습니다.
+    -   다국어 리소스(`frontend/src/locales/en/translation.json`, `frontend/src/locales/ko/translation.json`): 서브태스크 UI 및 에러 메시지 번역 키를 추가했습니다.
